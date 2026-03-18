@@ -63,6 +63,18 @@
     }
     .btn-add:hover { background: #0a5e62; }
 
+    /* VIEW TOGGLE */
+    .view-toggle {
+      display: flex; background: #fff; border-radius: 10px;
+      border: 1.5px solid #d1e8e9; overflow: hidden; flex-shrink: 0;
+    }
+    .view-btn {
+      padding: 9px 16px; border: none; background: transparent;
+      font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+      color: #888; transition: all 0.15s;
+    }
+    .view-btn.active { background: #0D7377; color: #fff; }
+
     /* FILTER TABS */
     .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
     .filter-tab {
@@ -114,12 +126,8 @@
       cursor: pointer; transition: all 0.15s; font-family: inherit; border: 1.5px solid #e2e8f0;
       background: #fff; color: #888;
     }
-    .status-btn.no-response-btn {
-      border-color: #CBD5E1; color: #64748B;
-    }
-    .status-btn.no-response-btn:hover {
-      background: #F1F5F9; border-color: #94A3B8;
-    }
+    .status-btn.no-response-btn { border-color: #CBD5E1; color: #64748B; }
+    .status-btn.no-response-btn:hover { background: #F1F5F9; border-color: #94A3B8; }
     .salary-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
     .salary-box {
       flex: 1; min-width: 150px; background: #f0f9f9; border-radius: 10px;
@@ -155,9 +163,7 @@
       cursor: pointer; padding: 4px 0 12px;
       user-select: none;
     }
-    .no-response-title {
-      font-size: 14px; font-weight: 600; color: #64748B;
-    }
+    .no-response-title { font-size: 14px; font-weight: 600; color: #64748B; }
     .no-response-count {
       background: #E2E8F0; color: #64748B; border-radius: 20px;
       padding: 2px 10px; font-size: 12px; font-weight: 700;
@@ -166,11 +172,63 @@
     .no-response-chevron.open { transform: rotate(180deg); }
     .no-response-list { display: none; flex-direction: column; gap: 12px; }
     .no-response-list.visible { display: flex; }
-    .no-response-list .card {
-      opacity: 0.75;
-      border-color: #DDE4EC;
-    }
+    .no-response-list .card { opacity: 0.75; border-color: #DDE4EC; }
     .no-response-list .card:hover { opacity: 1; }
+
+    /* CALENDAR */
+    .calendar-wrap { display: none; }
+    .calendar-wrap.visible { display: block; }
+    .calendar-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cal-month-label { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+    .cal-nav-btn {
+      background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 6px 14px; cursor: pointer; font-size: 16px; font-family: inherit;
+      color: #444;
+    }
+    .cal-nav-btn:hover { background: #f0f9f9; border-color: #0D7377; }
+    .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .cal-day-header {
+      text-align: center; font-size: 11px; font-weight: 600;
+      color: #94A3B8; padding: 6px 4px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .cal-day {
+      min-height: 82px; background: #fff; border-radius: 10px;
+      border: 1.5px solid #e8f0f1; padding: 8px 7px;
+      transition: box-shadow 0.15s;
+    }
+    .cal-day.empty { background: transparent; border-color: transparent; pointer-events: none; }
+    .cal-day.today { border-color: #0D7377; box-shadow: 0 0 0 1px #0D7377; }
+    .cal-day.has-jobs { background: #f8fefe; }
+    .cal-day-num {
+      font-size: 12px; font-weight: 600; color: #94A3B8; margin-bottom: 5px;
+    }
+    .cal-day.today .cal-day-num {
+      color: #fff; background: #0D7377; border-radius: 50%;
+      width: 20px; height: 20px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px;
+    }
+    .cal-job-chip {
+      font-size: 10px; border-radius: 4px; padding: 2px 5px; margin-bottom: 3px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      display: block; border: 1px solid; font-weight: 500; line-height: 1.4;
+    }
+    .cal-more { font-size: 10px; color: #94A3B8; margin-top: 1px; }
+
+    /* AUTO-MOVE TOAST */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: #fff; border-radius: 10px;
+      padding: 12px 20px; font-size: 13px; font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
 
     /* MODAL */
     .modal-overlay {
@@ -227,6 +285,9 @@
   </div>
 </div>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- MAIN -->
 <div class="main">
   <div class="controls">
@@ -236,13 +297,30 @@
       <option value="company">Sort: Company</option>
       <option value="priority">Sort: Priority</option>
     </select>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-list" onclick="setView('list')">≡ List</button>
+      <button class="view-btn" id="btn-calendar" onclick="setView('calendar')">📅 Calendar</button>
+    </div>
     <button class="btn-add" onclick="openAdd()">+ Add Job</button>
   </div>
 
-  <div class="filter-tabs" id="filterTabs"></div>
-  <div class="cards" id="cards"></div>
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="filter-tabs" id="filterTabs"></div>
+    <div class="cards" id="cards"></div>
+  </div>
 
-  <!-- NO RESPONSE SECTION -->
+  <!-- CALENDAR VIEW -->
+  <div class="calendar-wrap" id="calendarWrap">
+    <div class="calendar-nav">
+      <button class="cal-nav-btn" onclick="prevMonth()">‹</button>
+      <span class="cal-month-label" id="calMonthLabel"></span>
+      <button class="cal-nav-btn" onclick="nextMonth()">›</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <!-- NO RESPONSE SECTION (shown in both views) -->
   <div class="no-response-section" id="noRespSection" style="display:none">
     <div class="no-response-header" onclick="toggleNoResp()">
       <span class="no-response-title">📭 No Response</span>
@@ -305,6 +383,8 @@
     medium: { label: "✦ Interested",  color: "#D97706" },
     low:    { label: "· Exploring",   color: "#94A3B8" },
   };
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const MAIN_STATUSES = ["Wishlist","Applied","Interview","Offer","Rejected","Withdrawn"];
   const ALL_STATUSES  = [...MAIN_STATUSES, "No Response"];
 
@@ -318,15 +398,43 @@
   let expandedId = null;
   let editingId = null;
   let noRespOpen = false;
+  let currentView = "list";
+  const today = new Date();
+  let calendarMonth = today.getMonth();
+  let calendarYear  = today.getFullYear();
 
   function save() { localStorage.setItem("ariel_jobs", JSON.stringify(jobs)); }
 
+  // ── AUTO NO RESPONSE (2 weeks) ──────────────────────────────────────────
+  function autoNoResponse() {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14);
+    let moved = 0;
+    jobs = jobs.map(j => {
+      if (j.status === "Applied" && j.date) {
+        const applied = new Date(j.date);
+        if (applied < cutoff) { moved++; return { ...j, status: "No Response" }; }
+      }
+      return j;
+    });
+    if (moved > 0) {
+      save();
+      showToast(`📭 ${moved} job${moved > 1 ? "s" : ""} moved to No Response (2+ weeks with no update)`);
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 4000);
+  }
+
+  // ── CARD BUILDER ────────────────────────────────────────────────────────
   function buildCard(job, inNoRespSection) {
     const sc = STATUS_COLORS[job.status] || STATUS_COLORS.Applied;
     const pc = PRIORITY[job.priority] || PRIORITY.medium;
     const expanded = expandedId === job.id;
-
-    // Status buttons — in no-response section show main statuses to restore; in main list show all
     const btnStatuses = inNoRespSection ? MAIN_STATUSES : ALL_STATUSES;
     const statusBtns = btnStatuses.map(s => {
       const c = STATUS_COLORS[s];
@@ -375,66 +483,123 @@
       </div>`;
   }
 
-  function render() {
-    const search = document.getElementById("search").value.toLowerCase();
-    const sortBy = document.getElementById("sortBy").value;
+  // ── CALENDAR RENDER ─────────────────────────────────────────────────────
+  function renderCalendar() {
+    const firstDay    = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const monthStr    = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}`;
 
-    const mainJobs = jobs.filter(j => j.status !== "No Response");
+    document.getElementById("calMonthLabel").textContent = `${MONTH_NAMES[calendarMonth]} ${calendarYear}`;
+
+    // Group all jobs by day
+    const jobsByDay = {};
+    jobs.filter(j => j.date && j.date.startsWith(monthStr)).forEach(j => {
+      const d = parseInt(j.date.split("-")[2]);
+      if (!jobsByDay[d]) jobsByDay[d] = [];
+      jobsByDay[d].push(j);
+    });
+
+    const grid = document.getElementById("calendarGrid");
+    let html = DAY_NAMES.map(d => `<div class="cal-day-header">${d}</div>`).join("");
+
+    // Empty cells
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = today.getFullYear() === calendarYear &&
+                      today.getMonth()    === calendarMonth &&
+                      today.getDate()     === d;
+      const dayJobs = jobsByDay[d] || [];
+      const hasJobs = dayJobs.length > 0;
+
+      const chips = dayJobs.slice(0, 3).map(j => {
+        const sc = STATUS_COLORS[j.status] || STATUS_COLORS.Applied;
+        return `<span class="cal-job-chip" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}" title="${j.company} — ${j.role}">${j.company}</span>`;
+      }).join("");
+      const more = dayJobs.length > 3 ? `<div class="cal-more">+${dayJobs.length - 3} more</div>` : "";
+
+      html += `
+        <div class="cal-day ${isToday ? "today" : ""} ${hasJobs ? "has-jobs" : ""}">
+          <div class="cal-day-num">${d}</div>
+          ${chips}${more}
+        </div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function prevMonth() {
+    calendarMonth--;
+    if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+    renderCalendar();
+  }
+  function nextMonth() {
+    calendarMonth++;
+    if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+    renderCalendar();
+  }
+
+  // ── MAIN RENDER ─────────────────────────────────────────────────────────
+  function render() {
+    const search  = document.getElementById("search").value.toLowerCase();
+    const sortBy  = document.getElementById("sortBy").value;
+    const mainJobs   = jobs.filter(j => j.status !== "No Response");
     const noRespJobs = jobs.filter(j => j.status === "No Response");
 
     // Stats
-    document.getElementById("stat-total").textContent = jobs.length;
-    document.getElementById("stat-applied").textContent = mainJobs.filter(j => j.status === "Applied").length;
+    document.getElementById("stat-total").textContent    = jobs.length;
+    document.getElementById("stat-applied").textContent  = mainJobs.filter(j => j.status === "Applied").length;
     document.getElementById("stat-interview").textContent = mainJobs.filter(j => j.status === "Interview").length;
-    document.getElementById("stat-offer").textContent = mainJobs.filter(j => j.status === "Offer").length;
-    document.getElementById("stat-noresp").textContent = noRespJobs.length;
+    document.getElementById("stat-offer").textContent    = mainJobs.filter(j => j.status === "Offer").length;
+    document.getElementById("stat-noresp").textContent   = noRespJobs.length;
 
-    // Filter tabs (main statuses only)
-    const tabsEl = document.getElementById("filterTabs");
-    tabsEl.innerHTML = ["All", ...MAIN_STATUSES].map(s => {
-      const count = s !== "All" ? mainJobs.filter(j => j.status === s).length : null;
-      const active = filter === s;
-      return `<button class="filter-tab ${active ? "active" : ""}" onclick="setFilter('${s}')">${s}${count ? ` (${count})` : ""}</button>`;
-    }).join("");
+    // View toggle highlight
+    document.getElementById("btn-list").className     = "view-btn" + (currentView === "list"     ? " active" : "");
+    document.getElementById("btn-calendar").className = "view-btn" + (currentView === "calendar" ? " active" : "");
+    document.getElementById("listView").style.display     = currentView === "list"     ? "block" : "none";
+    document.getElementById("calendarWrap").className     = "calendar-wrap" + (currentView === "calendar" ? " visible" : "");
 
-    // Filter + sort main jobs
-    let filtered = mainJobs
-      .filter(j => filter === "All" || j.status === filter)
-      .filter(j => !search || j.company.toLowerCase().includes(search) || j.role.toLowerCase().includes(search) || j.location.toLowerCase().includes(search));
+    if (currentView === "list") {
+      // Filter tabs
+      const tabsEl = document.getElementById("filterTabs");
+      tabsEl.innerHTML = ["All", ...MAIN_STATUSES].map(s => {
+        const count  = s !== "All" ? mainJobs.filter(j => j.status === s).length : null;
+        const active = filter === s;
+        return `<button class="filter-tab ${active ? "active" : ""}" onclick="setFilter('${s}')">${s}${count ? ` (${count})` : ""}</button>`;
+      }).join("");
 
-    if (sortBy === "date") filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-    else if (sortBy === "company") filtered.sort((a, b) => a.company.localeCompare(b.company));
-    else if (sortBy === "priority") { const o = {high:0,medium:1,low:2}; filtered.sort((a,b) => o[a.priority] - o[b.priority]); }
+      // Filter + sort
+      let filtered = mainJobs
+        .filter(j => filter === "All" || j.status === filter)
+        .filter(j => !search || j.company.toLowerCase().includes(search) || j.role.toLowerCase().includes(search) || j.location.toLowerCase().includes(search));
 
-    const cardsEl = document.getElementById("cards");
-    if (filtered.length === 0) {
-      cardsEl.innerHTML = `<div class="empty-state">No applications here. Add your first one! ✨</div>`;
+      if (sortBy === "date")     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+      else if (sortBy === "company")  filtered.sort((a, b) => a.company.localeCompare(b.company));
+      else if (sortBy === "priority") { const o = {high:0,medium:1,low:2}; filtered.sort((a,b) => o[a.priority] - o[b.priority]); }
+
+      const cardsEl = document.getElementById("cards");
+      cardsEl.innerHTML = filtered.length === 0
+        ? `<div class="empty-state">No applications here. Add your first one! ✨</div>`
+        : filtered.map(j => buildCard(j, false)).join("");
     } else {
-      cardsEl.innerHTML = filtered.map(job => buildCard(job, false)).join("");
+      renderCalendar();
     }
 
-    // No Response section
+    // No Response section (both views)
     const noRespSection = document.getElementById("noRespSection");
-    const noRespList = document.getElementById("noRespList");
-    const noRespCount = document.getElementById("noRespCount");
-    const noRespChevron = document.getElementById("noRespChevron");
-
     if (noRespJobs.length > 0) {
       noRespSection.style.display = "block";
-      noRespCount.textContent = noRespJobs.length;
-      noRespChevron.className = "no-response-chevron" + (noRespOpen ? " open" : "");
-      noRespList.className = "no-response-list" + (noRespOpen ? " visible" : "");
-      noRespList.innerHTML = noRespJobs.map(job => buildCard(job, true)).join("");
+      document.getElementById("noRespCount").textContent = noRespJobs.length;
+      document.getElementById("noRespChevron").className = "no-response-chevron" + (noRespOpen ? " open" : "");
+      const list = document.getElementById("noRespList");
+      list.className = "no-response-list" + (noRespOpen ? " visible" : "");
+      list.innerHTML = noRespJobs.map(j => buildCard(j, true)).join("");
     } else {
       noRespSection.style.display = "none";
     }
   }
 
-  function toggleNoResp() {
-    noRespOpen = !noRespOpen;
-    render();
-  }
-
+  function setView(v) { currentView = v; render(); }
+  function toggleNoResp() { noRespOpen = !noRespOpen; render(); }
   function setFilter(f) { filter = f; render(); }
   function toggleExpand(id) { expandedId = expandedId === id ? null : id; render(); }
   function updateStatus(id, status) { jobs = jobs.map(j => j.id === id ? {...j, status} : j); save(); render(); }
@@ -446,7 +611,7 @@
     ["company","role","location","link","salary","salaryExpected","notes"].forEach(k => document.getElementById("f-"+k).value = "");
     document.getElementById("f-status").value = "Applied";
     document.getElementById("f-priority").value = "medium";
-    document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+    document.getElementById("f-date").value = new Date().toISOString().slice(0, 10);
     document.getElementById("modal").classList.add("visible");
   }
 
@@ -464,18 +629,18 @@
 
   function saveJob() {
     const company = document.getElementById("f-company").value.trim();
-    const role = document.getElementById("f-role").value.trim();
+    const role    = document.getElementById("f-role").value.trim();
     if (!company || !role) { alert("Company and Role are required."); return; }
     const job = {
       company, role,
-      location: document.getElementById("f-location").value,
-      link: document.getElementById("f-link").value,
-      salary: document.getElementById("f-salary").value,
+      location:       document.getElementById("f-location").value,
+      link:           document.getElementById("f-link").value,
+      salary:         document.getElementById("f-salary").value,
       salaryExpected: document.getElementById("f-salaryExpected").value,
-      notes: document.getElementById("f-notes").value,
-      status: document.getElementById("f-status").value,
-      priority: document.getElementById("f-priority").value,
-      date: document.getElementById("f-date").value,
+      notes:          document.getElementById("f-notes").value,
+      status:         document.getElementById("f-status").value,
+      priority:       document.getElementById("f-priority").value,
+      date:           document.getElementById("f-date").value,
     };
     if (editingId) {
       jobs = jobs.map(j => j.id === editingId ? {...job, id: editingId} : j);
@@ -485,6 +650,8 @@
     save(); closeModal(); render();
   }
 
+  // Run auto-move on load, then render
+  autoNoResponse();
   render();
 </script>
 </body>
