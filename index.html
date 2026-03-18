@@ -114,6 +114,12 @@
       cursor: pointer; transition: all 0.15s; font-family: inherit; border: 1.5px solid #e2e8f0;
       background: #fff; color: #888;
     }
+    .status-btn.no-response-btn {
+      border-color: #CBD5E1; color: #64748B;
+    }
+    .status-btn.no-response-btn:hover {
+      background: #F1F5F9; border-color: #94A3B8;
+    }
     .salary-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
     .salary-box {
       flex: 1; min-width: 150px; background: #f0f9f9; border-radius: 10px;
@@ -137,6 +143,34 @@
     }
     .btn-remove:hover { background: #fff1f2; }
     .empty-state { text-align: center; padding: 60px; color: #94A3B8; font-size: 15px; }
+
+    /* NO RESPONSE SECTION */
+    .no-response-section {
+      margin-top: 32px;
+      border-top: 2px dashed #CBD5E1;
+      padding-top: 20px;
+    }
+    .no-response-header {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; padding: 4px 0 12px;
+      user-select: none;
+    }
+    .no-response-title {
+      font-size: 14px; font-weight: 600; color: #64748B;
+    }
+    .no-response-count {
+      background: #E2E8F0; color: #64748B; border-radius: 20px;
+      padding: 2px 10px; font-size: 12px; font-weight: 700;
+    }
+    .no-response-chevron { color: #aaa; font-size: 16px; transition: transform 0.2s; margin-left: auto; }
+    .no-response-chevron.open { transform: rotate(180deg); }
+    .no-response-list { display: none; flex-direction: column; gap: 12px; }
+    .no-response-list.visible { display: flex; }
+    .no-response-list .card {
+      opacity: 0.75;
+      border-color: #DDE4EC;
+    }
+    .no-response-list .card:hover { opacity: 1; }
 
     /* MODAL */
     .modal-overlay {
@@ -188,6 +222,7 @@
       <div class="stat-pill"><span class="stat-num" id="stat-applied">0</span><span class="stat-label">Applied</span></div>
       <div class="stat-pill"><span class="stat-num" id="stat-interview">0</span><span class="stat-label">Interviews</span></div>
       <div class="stat-pill highlight"><span class="stat-num" id="stat-offer">0</span><span class="stat-label">Offers</span></div>
+      <div class="stat-pill"><span class="stat-num" id="stat-noresp">0</span><span class="stat-label">No Response</span></div>
     </div>
   </div>
 </div>
@@ -206,6 +241,16 @@
 
   <div class="filter-tabs" id="filterTabs"></div>
   <div class="cards" id="cards"></div>
+
+  <!-- NO RESPONSE SECTION -->
+  <div class="no-response-section" id="noRespSection" style="display:none">
+    <div class="no-response-header" onclick="toggleNoResp()">
+      <span class="no-response-title">📭 No Response</span>
+      <span class="no-response-count" id="noRespCount">0</span>
+      <span class="no-response-chevron" id="noRespChevron">▾</span>
+    </div>
+    <div class="no-response-list" id="noRespList"></div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -224,6 +269,7 @@
         <select class="form-select" id="f-status">
           <option>Wishlist</option><option selected>Applied</option><option>Interview</option>
           <option>Offer</option><option>Rejected</option><option>Withdrawn</option>
+          <option>No Response</option>
         </select>
       </div>
       <div>
@@ -246,19 +292,21 @@
 
 <script>
   const STATUS_COLORS = {
-    Wishlist:  { bg: "#F0F4FF", text: "#4A6CF7", border: "#C7D2FE" },
-    Applied:   { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0" },
-    Interview: { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-    Offer:     { bg: "#F0FDF4", text: "#16A34A", border: "#86EFAC" },
-    Rejected:  { bg: "#FFF1F2", text: "#E11D48", border: "#FECDD3" },
-    Withdrawn: { bg: "#F8FAFC", text: "#94A3B8", border: "#E2E8F0" },
+    Wishlist:      { bg: "#F0F4FF", text: "#4A6CF7", border: "#C7D2FE" },
+    Applied:       { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0" },
+    Interview:     { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
+    Offer:         { bg: "#F0FDF4", text: "#16A34A", border: "#86EFAC" },
+    Rejected:      { bg: "#FFF1F2", text: "#E11D48", border: "#FECDD3" },
+    Withdrawn:     { bg: "#F8FAFC", text: "#94A3B8", border: "#E2E8F0" },
+    "No Response": { bg: "#F1F5F9", text: "#64748B", border: "#CBD5E1" },
   };
   const PRIORITY = {
     high:   { label: "⭐ Top Choice", color: "#0D7377" },
     medium: { label: "✦ Interested",  color: "#D97706" },
     low:    { label: "· Exploring",   color: "#94A3B8" },
   };
-  const STATUSES = ["Wishlist","Applied","Interview","Offer","Rejected","Withdrawn"];
+  const MAIN_STATUSES = ["Wishlist","Applied","Interview","Offer","Rejected","Withdrawn"];
+  const ALL_STATUSES  = [...MAIN_STATUSES, "No Response"];
 
   let jobs = JSON.parse(localStorage.getItem("ariel_jobs") || "null") || [
     { id: 1, company: "Enso Connect", role: "Bilingual Customer Success Manager", location: "Quebec, Canada (Remote)", status: "Applied", date: "2026-03-05", salary: "$55K–$70K", salaryExpected: "$58,000–$65,000 CAD", notes: "Top choice! Hospitality + SaaS + bilingual — perfect fit. Resume tailored, standout statement added.", link: "", priority: "high" },
@@ -269,29 +317,88 @@
   let filter = "All";
   let expandedId = null;
   let editingId = null;
+  let noRespOpen = false;
 
   function save() { localStorage.setItem("ariel_jobs", JSON.stringify(jobs)); }
+
+  function buildCard(job, inNoRespSection) {
+    const sc = STATUS_COLORS[job.status] || STATUS_COLORS.Applied;
+    const pc = PRIORITY[job.priority] || PRIORITY.medium;
+    const expanded = expandedId === job.id;
+
+    // Status buttons — in no-response section show main statuses to restore; in main list show all
+    const btnStatuses = inNoRespSection ? MAIN_STATUSES : ALL_STATUSES;
+    const statusBtns = btnStatuses.map(s => {
+      const c = STATUS_COLORS[s];
+      const active = job.status === s;
+      const style = active ? `background:${c.bg};color:${c.text};border-color:${c.border};` : "";
+      const extraClass = s === "No Response" ? "no-response-btn" : "";
+      return `<button class="status-btn ${extraClass}" style="${style}" onclick="updateStatus(${job.id},'${s}')">${s}</button>`;
+    }).join("");
+
+    return `
+      <div class="card ${expanded ? "expanded" : ""}" id="card-${job.id}">
+        <div class="card-top" onclick="toggleExpand(${job.id})">
+          <div class="priority-dot" style="background:${pc.color}"></div>
+          <div class="card-info">
+            <div class="card-title">
+              <span class="card-company">${job.company}</span>
+              <span style="color:#666">·</span>
+              <span class="card-role">${job.role}</span>
+            </div>
+            <div class="card-meta">${job.location}${job.salary ? " · " + job.salary : ""} · Applied ${job.date}</div>
+          </div>
+          <div class="status-badge" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}">${job.status}</div>
+          <div class="priority-label" style="color:${pc.color}">${pc.label}</div>
+          <div class="chevron ${expanded ? "open" : ""}">▾</div>
+        </div>
+        <div class="card-body ${expanded ? "visible" : ""}">
+          <div class="section-label">${inNoRespSection ? "Restore Status" : "Update Status"}</div>
+          <div class="status-buttons">${statusBtns}</div>
+          <div class="salary-row">
+            <div class="salary-box">
+              <div class="salary-box-label">Posted Salary</div>
+              <div class="salary-box-value ${job.salary ? "" : "empty"}">${job.salary || "Not listed"}</div>
+            </div>
+            <div class="salary-box">
+              <div class="salary-box-label">My Expectation</div>
+              <div class="salary-box-value ${job.salaryExpected ? "" : "empty"}">${job.salaryExpected || "Not set"}</div>
+            </div>
+          </div>
+          ${job.notes ? `<div class="notes-section"><div class="section-label">Notes</div><div class="notes-text">${job.notes}</div></div>` : ""}
+          ${job.link ? `<div style="margin-bottom:14px"><a href="${job.link}" target="_blank" style="color:#0D7377;font-size:13px">🔗 View Job Posting</a></div>` : ""}
+          <div class="card-actions">
+            <button class="btn-edit" onclick="openEdit(${job.id})">Edit</button>
+            <button class="btn-remove" onclick="removeJob(${job.id})">Remove</button>
+          </div>
+        </div>
+      </div>`;
+  }
 
   function render() {
     const search = document.getElementById("search").value.toLowerCase();
     const sortBy = document.getElementById("sortBy").value;
 
+    const mainJobs = jobs.filter(j => j.status !== "No Response");
+    const noRespJobs = jobs.filter(j => j.status === "No Response");
+
     // Stats
     document.getElementById("stat-total").textContent = jobs.length;
-    document.getElementById("stat-applied").textContent = jobs.filter(j => j.status === "Applied").length;
-    document.getElementById("stat-interview").textContent = jobs.filter(j => j.status === "Interview").length;
-    document.getElementById("stat-offer").textContent = jobs.filter(j => j.status === "Offer").length;
+    document.getElementById("stat-applied").textContent = mainJobs.filter(j => j.status === "Applied").length;
+    document.getElementById("stat-interview").textContent = mainJobs.filter(j => j.status === "Interview").length;
+    document.getElementById("stat-offer").textContent = mainJobs.filter(j => j.status === "Offer").length;
+    document.getElementById("stat-noresp").textContent = noRespJobs.length;
 
-    // Filter tabs
+    // Filter tabs (main statuses only)
     const tabsEl = document.getElementById("filterTabs");
-    tabsEl.innerHTML = ["All", ...STATUSES].map(s => {
-      const count = s !== "All" ? jobs.filter(j => j.status === s).length : null;
+    tabsEl.innerHTML = ["All", ...MAIN_STATUSES].map(s => {
+      const count = s !== "All" ? mainJobs.filter(j => j.status === s).length : null;
       const active = filter === s;
       return `<button class="filter-tab ${active ? "active" : ""}" onclick="setFilter('${s}')">${s}${count ? ` (${count})` : ""}</button>`;
     }).join("");
 
-    // Filter + sort
-    let filtered = jobs
+    // Filter + sort main jobs
+    let filtered = mainJobs
       .filter(j => filter === "All" || j.status === filter)
       .filter(j => !search || j.company.toLowerCase().includes(search) || j.role.toLowerCase().includes(search) || j.location.toLowerCase().includes(search));
 
@@ -301,62 +408,31 @@
 
     const cardsEl = document.getElementById("cards");
     if (filtered.length === 0) {
-      cardsEl.innerHTML = `<div class="empty-state">No applications yet. Add your first one! ✨</div>`;
-      return;
+      cardsEl.innerHTML = `<div class="empty-state">No applications here. Add your first one! ✨</div>`;
+    } else {
+      cardsEl.innerHTML = filtered.map(job => buildCard(job, false)).join("");
     }
 
-    cardsEl.innerHTML = filtered.map(job => {
-      const sc = STATUS_COLORS[job.status] || STATUS_COLORS.Applied;
-      const pc = PRIORITY[job.priority] || PRIORITY.medium;
-      const expanded = expandedId === job.id;
+    // No Response section
+    const noRespSection = document.getElementById("noRespSection");
+    const noRespList = document.getElementById("noRespList");
+    const noRespCount = document.getElementById("noRespCount");
+    const noRespChevron = document.getElementById("noRespChevron");
 
-      const statusBtns = STATUSES.map(s => {
-        const c = STATUS_COLORS[s];
-        const active = job.status === s;
-        const style = active
-          ? `background:${c.bg};color:${c.text};border-color:${c.border};`
-          : "";
-        return `<button class="status-btn" style="${style}" onclick="updateStatus(${job.id},'${s}')">${s}</button>`;
-      }).join("");
+    if (noRespJobs.length > 0) {
+      noRespSection.style.display = "block";
+      noRespCount.textContent = noRespJobs.length;
+      noRespChevron.className = "no-response-chevron" + (noRespOpen ? " open" : "");
+      noRespList.className = "no-response-list" + (noRespOpen ? " visible" : "");
+      noRespList.innerHTML = noRespJobs.map(job => buildCard(job, true)).join("");
+    } else {
+      noRespSection.style.display = "none";
+    }
+  }
 
-      return `
-        <div class="card ${expanded ? "expanded" : ""}" id="card-${job.id}">
-          <div class="card-top" onclick="toggleExpand(${job.id})">
-            <div class="priority-dot" style="background:${pc.color}"></div>
-            <div class="card-info">
-              <div class="card-title">
-                <span class="card-company">${job.company}</span>
-                <span style="color:#666">·</span>
-                <span class="card-role">${job.role}</span>
-              </div>
-              <div class="card-meta">${job.location}${job.salary ? " · " + job.salary : ""} · Applied ${job.date}</div>
-            </div>
-            <div class="status-badge" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}">${job.status}</div>
-            <div class="priority-label" style="color:${pc.color}">${pc.label}</div>
-            <div class="chevron ${expanded ? "open" : ""}">▾</div>
-          </div>
-          <div class="card-body ${expanded ? "visible" : ""}">
-            <div class="section-label">Update Status</div>
-            <div class="status-buttons">${statusBtns}</div>
-            <div class="salary-row">
-              <div class="salary-box">
-                <div class="salary-box-label">Posted Salary</div>
-                <div class="salary-box-value ${job.salary ? "" : "empty"}">${job.salary || "Not listed"}</div>
-              </div>
-              <div class="salary-box">
-                <div class="salary-box-label">My Expectation</div>
-                <div class="salary-box-value ${job.salaryExpected ? "" : "empty"}">${job.salaryExpected || "Not set"}</div>
-              </div>
-            </div>
-            ${job.notes ? `<div class="notes-section"><div class="section-label">Notes</div><div class="notes-text">${job.notes}</div></div>` : ""}
-            ${job.link ? `<div style="margin-bottom:14px"><a href="${job.link}" target="_blank" style="color:#0D7377;font-size:13px">🔗 View Job Posting</a></div>` : ""}
-            <div class="card-actions">
-              <button class="btn-edit" onclick="openEdit(${job.id})">Edit</button>
-              <button class="btn-remove" onclick="removeJob(${job.id})">Remove</button>
-            </div>
-          </div>
-        </div>`;
-    }).join("");
+  function toggleNoResp() {
+    noRespOpen = !noRespOpen;
+    render();
   }
 
   function setFilter(f) { filter = f; render(); }
