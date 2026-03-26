@@ -323,7 +323,7 @@
   <!-- NO RESPONSE SECTION (shown in both views) -->
   <div class="no-response-section" id="noRespSection" style="display:none">
     <div class="no-response-header" onclick="toggleNoResp()">
-      <span class="no-response-title">📭 No Response</span>
+      <span class="no-response-title">📦 Archived (No Response &amp; Withdrawn)</span>
       <span class="no-response-count" id="noRespCount">0</span>
       <span class="no-response-chevron" id="noRespChevron">▾</span>
     </div>
@@ -346,8 +346,8 @@
         <label class="form-label">Status</label>
         <select class="form-select" id="f-status">
           <option>Wishlist</option><option selected>Applied</option><option>Interview</option>
-          <option>Offer</option><option>Rejected</option><option>Withdrawn</option>
-          <option>No Response</option>
+          <option>Offer</option><option>Rejected</option><option>Not Interested</option>
+          <option>Withdrawn</option><option>No Response</option>
         </select>
       </div>
       <div>
@@ -380,8 +380,9 @@
     Interview:     { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
     Offer:         { bg: "#F0FDF4", text: "#16A34A", border: "#86EFAC" },
     Rejected:      { bg: "#FFF1F2", text: "#E11D48", border: "#FECDD3" },
-    Withdrawn:     { bg: "#F8FAFC", text: "#94A3B8", border: "#E2E8F0" },
-    "No Response": { bg: "#F1F5F9", text: "#64748B", border: "#CBD5E1" },
+    Withdrawn:        { bg: "#F8FAFC", text: "#94A3B8", border: "#E2E8F0" },
+    "No Response":    { bg: "#F1F5F9", text: "#64748B", border: "#CBD5E1" },
+    "Not Interested": { bg: "#FFF7ED", text: "#EA580C", border: "#FED7AA" },
   };
   const PRIORITY = {
     high:   { label: "⭐ Top Choice", color: "#0D7377" },
@@ -390,8 +391,9 @@
   };
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const MAIN_STATUSES = ["Wishlist","Applied","Interview","Offer","Rejected","Withdrawn"];
-  const ALL_STATUSES  = [...MAIN_STATUSES, "No Response"];
+  const HIDDEN_STATUSES = ["No Response", "Withdrawn"];
+  const MAIN_STATUSES   = ["Wishlist","Applied","Interview","Offer","Rejected","Not Interested"];
+  const ALL_STATUSES    = [...MAIN_STATUSES, ...HIDDEN_STATUSES];
 
   let jobs = JSON.parse(localStorage.getItem("ariel_jobs") || "null") || [
     { id: 1, company: "Enso Connect", role: "Bilingual Customer Success Manager", location: "Quebec, Canada (Remote)", status: "Applied", date: "2026-03-05", salary: "$55K–$70K", salaryExpected: "$58,000–$65,000 CAD", notes: "Top choice! Hospitality + SaaS + bilingual — perfect fit. Resume tailored, standout statement added.", link: "", priority: "high" },
@@ -558,15 +560,15 @@
   function render() {
     const search  = document.getElementById("search").value.toLowerCase();
     const sortBy  = document.getElementById("sortBy").value;
-    const mainJobs   = jobs.filter(j => j.status !== "No Response");
-    const noRespJobs = jobs.filter(j => j.status === "No Response");
+    const mainJobs    = jobs.filter(j => !HIDDEN_STATUSES.includes(j.status));
+    const archivedJobs = jobs.filter(j => HIDDEN_STATUSES.includes(j.status));
 
     // Stats
     document.getElementById("stat-total").textContent    = jobs.length;
     document.getElementById("stat-applied").textContent  = mainJobs.filter(j => j.status === "Applied").length;
     document.getElementById("stat-interview").textContent = mainJobs.filter(j => j.status === "Interview").length;
     document.getElementById("stat-offer").textContent    = mainJobs.filter(j => j.status === "Offer").length;
-    document.getElementById("stat-noresp").textContent   = noRespJobs.length;
+    document.getElementById("stat-noresp").textContent   = archivedJobs.filter(j => j.status === "No Response").length;
 
     // View toggle highlight
     document.getElementById("btn-list").className     = "view-btn" + (currentView === "list"     ? " active" : "");
@@ -600,15 +602,15 @@
       renderCalendar();
     }
 
-    // No Response section (both views)
+    // Archived section (No Response + Withdrawn)
     const noRespSection = document.getElementById("noRespSection");
-    if (noRespJobs.length > 0) {
+    if (archivedJobs.length > 0) {
       noRespSection.style.display = "block";
-      document.getElementById("noRespCount").textContent = noRespJobs.length;
+      document.getElementById("noRespCount").textContent = archivedJobs.length;
       document.getElementById("noRespChevron").className = "no-response-chevron" + (noRespOpen ? " open" : "");
       const list = document.getElementById("noRespList");
       list.className = "no-response-list" + (noRespOpen ? " visible" : "");
-      list.innerHTML = noRespJobs.map(j => buildCard(j, true)).join("");
+      list.innerHTML = archivedJobs.map(j => buildCard(j, true)).join("");
     } else {
       noRespSection.style.display = "none";
     }
