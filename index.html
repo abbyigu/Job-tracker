@@ -529,8 +529,9 @@
       const hasJobs = dayJobs.length > 0;
 
       const chips = dayJobs.slice(0, 3).map(j => {
-        const sc = j._calType
-          ? { bg: "#EEF2FF", text: "#4F46E5", border: "#C7D2FE" }
+        const sc = j._calType === "Round 1" ? { bg: "#EEF2FF", text: "#4F46E5", border: "#C7D2FE" }
+          : j._calType === "Round 2" ? { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" }
+          : j._calType === "Round 3" ? { bg: "#FDF4FF", text: "#A21CAF", border: "#F0ABFC" }
           : (STATUS_COLORS[j.status] || STATUS_COLORS.Applied);
         const prefix = j._calType ? `📅 ${j._calType} · ` : "";
         return `<span class="cal-job-chip" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}" title="${j.company} — ${j.role} (${j._calType || 'applied'})">${prefix}${j.company}</span>`;
