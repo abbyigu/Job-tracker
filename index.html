@@ -392,8 +392,8 @@
   };
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const HIDDEN_STATUSES = ["No Response", "Withdrawn"];
-  const MAIN_STATUSES   = ["Wishlist","Applied","Interview","Waiting","Offer","Rejected","Not Interested"];
+  const HIDDEN_STATUSES = ["No Response", "Withdrawn", "Rejected"];
+  const MAIN_STATUSES   = ["Wishlist","Applied","Interview","Waiting","Offer","Not Interested"];
   const ALL_STATUSES    = [...MAIN_STATUSES, ...HIDDEN_STATUSES];
 
   let jobs = JSON.parse(localStorage.getItem("ariel_jobs") || "null") || [
