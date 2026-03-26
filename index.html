@@ -359,7 +359,10 @@
         </select>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Date Applied</label><input class="form-input" type="date" id="f-date" /></div>
+    <div class="form-row">
+      <div><label class="form-label">Date Applied</label><input class="form-input" type="date" id="f-date" /></div>
+      <div><label class="form-label">Interview Date</label><input class="form-input" type="date" id="f-interviewDate" /></div>
+    </div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="f-notes" rows="3" placeholder="Why this role? Interview notes, contacts, follow-up dates..."></textarea></div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveJob()">Save</button>
@@ -454,7 +457,7 @@
               <span style="color:#666">·</span>
               <span class="card-role">${job.role}</span>
             </div>
-            <div class="card-meta">${job.location}${job.salary ? " · " + job.salary : ""} · Applied ${job.date}</div>
+            <div class="card-meta">${job.location}${job.salary ? " · " + job.salary : ""} · Applied ${job.date}${job.interviewDate ? " · <strong style='color:#D97706'>Interview " + job.interviewDate + "</strong>" : ""}</div>
           </div>
           <div class="status-badge" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}">${job.status}</div>
           <div class="priority-label" style="color:${pc.color}">${pc.label}</div>
@@ -473,6 +476,7 @@
               <div class="salary-box-value ${job.salaryExpected ? "" : "empty"}">${job.salaryExpected || "Not set"}</div>
             </div>
           </div>
+          ${job.interviewDate ? `<div style="margin-bottom:14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 14px"><span style="font-size:11px;color:#D97706;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Interview Date</span><div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-top:4px">📅 ${job.interviewDate}</div></div>` : ""}
           ${job.notes ? `<div class="notes-section"><div class="section-label">Notes</div><div class="notes-text">${job.notes}</div></div>` : ""}
           ${job.link ? `<div style="margin-bottom:14px"><a href="${job.link}" target="_blank" style="color:#0D7377;font-size:13px">🔗 View Job Posting</a></div>` : ""}
           <div class="card-actions">
@@ -491,12 +495,17 @@
 
     document.getElementById("calMonthLabel").textContent = `${MONTH_NAMES[calendarMonth]} ${calendarYear}`;
 
-    // Group all jobs by day
+    // Group all jobs by day (applied date + interview date)
     const jobsByDay = {};
     jobs.filter(j => j.date && j.date.startsWith(monthStr)).forEach(j => {
       const d = parseInt(j.date.split("-")[2]);
       if (!jobsByDay[d]) jobsByDay[d] = [];
-      jobsByDay[d].push(j);
+      jobsByDay[d].push({...j, _calType: "applied"});
+    });
+    jobs.filter(j => j.interviewDate && j.interviewDate.startsWith(monthStr)).forEach(j => {
+      const d = parseInt(j.interviewDate.split("-")[2]);
+      if (!jobsByDay[d]) jobsByDay[d] = [];
+      jobsByDay[d].push({...j, _calType: "interview"});
     });
 
     const grid = document.getElementById("calendarGrid");
@@ -513,8 +522,11 @@
       const hasJobs = dayJobs.length > 0;
 
       const chips = dayJobs.slice(0, 3).map(j => {
-        const sc = STATUS_COLORS[j.status] || STATUS_COLORS.Applied;
-        return `<span class="cal-job-chip" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}" title="${j.company} — ${j.role}">${j.company}</span>`;
+        const sc = j._calType === "interview"
+          ? { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" }
+          : (STATUS_COLORS[j.status] || STATUS_COLORS.Applied);
+        const prefix = j._calType === "interview" ? "📅 " : "";
+        return `<span class="cal-job-chip" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}" title="${j.company} — ${j.role} (${j._calType})">${prefix}${j.company}</span>`;
       }).join("");
       const more = dayJobs.length > 3 ? `<div class="cal-more">+${dayJobs.length - 3} more</div>` : "";
 
@@ -608,7 +620,7 @@
   function openAdd() {
     editingId = null;
     document.getElementById("modalTitle").textContent = "Add New Application";
-    ["company","role","location","link","salary","salaryExpected","notes"].forEach(k => document.getElementById("f-"+k).value = "");
+    ["company","role","location","link","salary","salaryExpected","notes","interviewDate"].forEach(k => document.getElementById("f-"+k).value = "");
     document.getElementById("f-status").value = "Applied";
     document.getElementById("f-priority").value = "medium";
     document.getElementById("f-date").value = new Date().toISOString().slice(0, 10);
@@ -619,7 +631,7 @@
     const job = jobs.find(j => j.id === id);
     editingId = id;
     document.getElementById("modalTitle").textContent = "Edit Application";
-    ["company","role","location","link","salary","salaryExpected","notes","status","priority","date"].forEach(k => {
+    ["company","role","location","link","salary","salaryExpected","notes","status","priority","date","interviewDate"].forEach(k => {
       document.getElementById("f-"+k).value = job[k] || "";
     });
     document.getElementById("modal").classList.add("visible");
@@ -641,6 +653,7 @@
       status:         document.getElementById("f-status").value,
       priority:       document.getElementById("f-priority").value,
       date:           document.getElementById("f-date").value,
+      interviewDate:  document.getElementById("f-interviewDate").value,
     };
     if (editingId) {
       jobs = jobs.map(j => j.id === editingId ? {...job, id: editingId} : j);
