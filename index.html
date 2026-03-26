@@ -346,7 +346,7 @@
         <label class="form-label">Status</label>
         <select class="form-select" id="f-status">
           <option>Wishlist</option><option selected>Applied</option><option>Interview</option>
-          <option>Offer</option><option>Rejected</option><option>Not Interested</option>
+          <option>Waiting</option><option>Offer</option><option>Rejected</option><option>Not Interested</option>
           <option>Withdrawn</option><option>No Response</option>
         </select>
       </div>
@@ -380,6 +380,7 @@
     Interview:     { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
     Offer:         { bg: "#F0FDF4", text: "#16A34A", border: "#86EFAC" },
     Rejected:      { bg: "#FFF1F2", text: "#E11D48", border: "#FECDD3" },
+    Waiting:          { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },
     Withdrawn:        { bg: "#F8FAFC", text: "#94A3B8", border: "#E2E8F0" },
     "No Response":    { bg: "#F1F5F9", text: "#64748B", border: "#CBD5E1" },
     "Not Interested": { bg: "#FFF7ED", text: "#EA580C", border: "#FED7AA" },
@@ -392,7 +393,7 @@
   const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const HIDDEN_STATUSES = ["No Response", "Withdrawn"];
-  const MAIN_STATUSES   = ["Wishlist","Applied","Interview","Offer","Rejected","Not Interested"];
+  const MAIN_STATUSES   = ["Wishlist","Applied","Interview","Waiting","Offer","Rejected","Not Interested"];
   const ALL_STATUSES    = [...MAIN_STATUSES, ...HIDDEN_STATUSES];
 
   let jobs = JSON.parse(localStorage.getItem("ariel_jobs") || "null") || [
